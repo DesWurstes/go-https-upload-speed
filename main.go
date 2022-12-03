@@ -21,6 +21,7 @@ Instructions for setting up this server:
 -    then go to Firefox Settings > certificates > Authorities > scroll down
 -    import "rootCA.pem" > Trust for websites
 - $ mkcert localhost 127.0.0.1 ::1 <other domains/ips that can be used by the server>
+- (Note: I don't suggest using IPv6)
 - Open this "main.go" and set the constants below
 - $ go run .
 
@@ -103,7 +104,7 @@ func main() {
       </head>
       <body>
         <form enctype="multipart/form-data" action="https://` +
-				IP + PORT +
+				req.Host +
 				`/upload.html" method="post">
           <input type="file" name="myFile" />
           <input type="submit" value="upload" />
