@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lucas-clemente/quic-go/http3"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -42,7 +43,7 @@ const PORT = ":1441"
 
 const CERT = "./localhost+2.pem"
 const KEY = "./localhost+2-key.pem"
-const HTTP2 = true
+const HTTP = 3
 
 //https://stackoverflow.com/a/40699578
 func ReceiveFile(w http.ResponseWriter, r *http.Request) int {
@@ -125,12 +126,22 @@ func main() {
 		TLSConfig: cfg,
 	}
 
-	if !HTTP2 {
+	if HTTP == 1 {
 		srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 	}
 
-	log.Fatal(srv.ListenAndServeTLS(
-		CERT,
-		KEY,
-	))
+	if HTTP == 3 {
+		// https://stackoverflow.com/q/70961167
+		log.Fatal(http3.ListenAndServe(
+				PORT,
+				CERT,
+				KEY,
+				mux,
+		))
+	} else {
+		log.Fatal(srv.ListenAndServeTLS(
+			CERT,
+			KEY,
+		))
+	}
 }
