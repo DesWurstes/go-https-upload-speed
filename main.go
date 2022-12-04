@@ -58,14 +58,7 @@ const TLS_VERSION = 13
 
 //https://stackoverflow.com/a/40699578
 func ReceiveFile(w http.ResponseWriter, r *http.Request) int {
-	r.ParseMultipartForm(1 << 60)
-	file, _, err := r.FormFile("myFile")
-	if err != nil {
-		fmt.Println(err)
-		return 0
-	}
-	defer file.Close()
-	n, err := io.Copy(ioutil.Discard, file)
+	n, err := io.Copy(ioutil.Discard, r.Body)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -78,6 +71,8 @@ func main() {
 		if req.Method == "GET" {
 			http.Redirect(w, req, "https://"+req.Host, http.StatusSeeOther)
 		}
+		// Forms: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest#using_nothing_but_xmlhttprequest
+		// Retrieved Dec 2022
 		w.Write([]byte(
 			`<!DOCTYPE html>
       <html lang="en">
@@ -141,6 +136,8 @@ func main() {
           <input type="file" name="myFile" />
           <input type="submit" value="upload" />
         </form>
+				<br>
+				<script>function upload(length) {var blob = new Blob([new Uint8Array(length)], {type : "multipart/form-data"});var request = new XMLHttpRequest();request.open("POST", "upload.html");request.onreadystatechange = () => {if (request.readyState == 4) if (request.status == 200) document.body.innerHTML = request.response};request.send(blob)}</script>
 				<br>
 				<a onclick="fetch('5M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 5M file to browser memory</a><br>
 				<a onclick="fetch('20M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 20M file to browser memory</a><br>
