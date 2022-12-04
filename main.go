@@ -63,40 +63,6 @@ func receiveFile(w http.ResponseWriter, r *http.Request) int {
 	return int(n)
 }
 
-// TCP code could have been copied from here
-// https://github.com/lucas-clemente/quic-go/blob/8d496ebb5e3574a687d8a3b99988a5a51184884b/http3/server.go#L212
-// func ListenAndServe(addr, certFile, keyFile string,
-
-// Returns possible http3 config
-func startServer(vHTTP int, altSVCPresent bool, mux *http.ServeMux, cfg *tls.Config) *http3.Server {
-	srv := &http3.Server{
-		Addr:      PORT,
-		Handler:   mux,
-		// https://github.com/lucas-clemente/quic-go/blob/f2fa98c/interop/server/main.go
-		TLSConfig: cfg,
-	}
-
-	if vHTTP != 3 {
-		srv := &http.Server{
-			Addr:      PORT,
-			Handler:   mux,
-			TLSConfig: cfg,
-		}
-
-		if vHTTP == 1 {
-			// Alternative ways: https://stackoverflow.com/a/67775105
-			srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
-		}
-
-		log.Fatal(srv.ListenAndServeTLS(
-			CERT,
-			KEY,
-		))
-	}
-
-	return srv
-}
-
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/upload.html", func(w http.ResponseWriter, req *http.Request) {
@@ -166,23 +132,33 @@ func main() {
 	}
 
 	if HTTP == 3 {
-		quicServer := startServer(3, false, mux, cfg)
-		upgradeMux := http.NewServeMux()
-		upgradeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			//w.Write([]byte(`Attempting to redirect to H/3.`))
-			// https://github.com/lucas-clemente/quic-go/blob/8d496ebb5e3574a687d8a3b99988a5a51184884b/http3/server.go#L691
-			quicServer.SetQuicHeaders(w.Header())
-			mux.ServeHTTP(w, r)
-		})
-		go startServer(1, true, upgradeMux, cfg)
-		log.Fatal(http3.ListenAndServe(
-				PORT,
-				CERT,
-				KEY,
-				mux,
-			),
-		)
+		srv := &http3.Server{
+			Addr:      PORT,
+			Handler:   mux,
+			// https://github.com/lucas-clemente/quic-go/blob/f2fa98c/interop/server/main.go
+			TLSConfig: cfg,
+		}
+
+		// https://stackoverflow.com/q/70961167
+		log.Fatal(srv.ListenAndServeTLS(
+			CERT,
+			KEY,
+		))
 	} else {
-		startServer(HTTP, false, mux, cfg)
+		srv := &http.Server{
+			Addr:      PORT,
+			Handler:   mux,
+			TLSConfig: cfg,
+		}
+
+		if HTTP == 1 {
+			// Alternative ways: https://stackoverflow.com/a/67775105
+			srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
+		}
+
+		log.Fatal(srv.ListenAndServeTLS(
+			CERT,
+			KEY,
+		))
 	}
 }
