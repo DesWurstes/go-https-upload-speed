@@ -142,6 +142,7 @@ func main() {
           <input type="submit" value="upload" />
         </form>
 				<br>
+				<a onclick="fetch('5M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 5M file to browser memory</a><br>
 				<a onclick="fetch('20M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 20M file to browser memory</a><br>
 				<a onclick="fetch('1G').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 1G file to browser memory</a><br>
 				Manual: visit ./XM or ./XG to download files this big. Buttons above are preferred, to download to RAM rather than the disk.<br>
