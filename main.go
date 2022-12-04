@@ -82,15 +82,15 @@ func main() {
         <title>Document</title>
       </head>
       <body>`))
-		w.Write([]byte(req.Proto + "</br>"))
+		w.Write([]byte(req.Proto + "<br/>"))
 		t1 := time.Now()
 		size := ReceiveFile(w, req)
 		t2 := time.Since(t1)
 		x := fmt.Sprintf("%v", t2)
 		if req.TLS.CipherSuite != 0 /*quic-go bug! lucas-clemente/quic-go/issues/3625 */ {
-			w.Write([]byte(fmt.Sprintf("cipher ") + fmt.Sprintf("0x%.4x</br>", req.TLS.CipherSuite)))
+			w.Write([]byte(fmt.Sprintf("cipher ") + fmt.Sprintf("0x%.4x<br/>", req.TLS.CipherSuite)))
 		}
-		w.Write([]byte(fmt.Sprintf("%v MB ", size/1000000) + fmt.Sprintf("%s</br>", x)))
+		w.Write([]byte(fmt.Sprintf("%v MB ", size/1000000) + fmt.Sprintf("%s<br/>", x)))
 		w.Write([]byte(fmt.Sprintf("%.3f MB/s ", float64(size)/float64(t2.Nanoseconds())*1000)))
 		// Prefer to print to console only when the client downloads
 		/*if size != 0 {
@@ -130,6 +130,7 @@ func main() {
         <title>Document</title>
       </head>
       <body>
+			Custom size from disk:
         <form enctype="multipart/form-data" action="https://` +
 				req.Host +
 				`/upload.html" method="post">
@@ -137,7 +138,11 @@ func main() {
           <input type="submit" value="upload" />
         </form>
 				<br>
-				<script>function upload(length) {var blob = new Blob([new Uint8Array(length)], {type : "multipart/form-data"});var request = new XMLHttpRequest();request.open("POST", "upload.html");request.onreadystatechange = () => {if (request.readyState == 4) if (request.status == 200) document.body.innerHTML = request.response};request.send(blob)}</script>
+				<script>async function upload(length) {var blob = new Blob([new Uint8Array(length)], {type : "multipart/form-data"});var request = new XMLHttpRequest();request.open("POST", "upload.html");request.onreadystatechange = () => {if (request.readyState == 4) if (request.status == 200) document.body.innerHTML = request.response};request.send(blob);blob=null}</script>
+				<a onclick="upload(5000000)">Upload 5M</a><br>
+				<a onclick="upload(20000000)">Upload 20M</a><br>
+				<a onclick="upload(1000000000)">Upload 1G</a><br>
+
 				<br>
 				<a onclick="fetch('5M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 5M file to browser memory</a><br>
 				<a onclick="fetch('20M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 20M file to browser memory</a><br>
