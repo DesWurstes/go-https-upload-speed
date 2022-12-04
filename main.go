@@ -66,7 +66,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/upload.html", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "GET" {
-			http.Redirect(w, req, "https://"+IP+PORT, http.StatusSeeOther)
+			http.Redirect(w, req, "https://"+req.Host, http.StatusSeeOther)
 		}
 		w.Write([]byte(
 			`<!DOCTYPE html>
@@ -82,6 +82,7 @@ func main() {
 		size := ReceiveFile(w, req)
 		t2 := time.Since(t1)
 		x := fmt.Sprintf("%v", t2)
+		w.Write([]byte(fmt.Sprintf("cipher ") + fmt.Sprintf("0x%.4x</br>", req.TLS.CipherSuite)))
 		w.Write([]byte(fmt.Sprintf("%v MB ", size/1000000) + fmt.Sprintf("%s</br>", x)))
 		w.Write([]byte(fmt.Sprintf("%.3f MB/s ", float64(size)/float64(t2.Nanoseconds())*1000)))
 		if size != 0 {
@@ -91,7 +92,7 @@ func main() {
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/" {
-			http.Redirect(w, req, "https://"+IP+PORT, http.StatusSeeOther)
+			http.Redirect(w, req, "https://"+req.Host, http.StatusSeeOther)
 		}
 		w.Write([]byte(
 			`<!DOCTYPE html>
@@ -118,7 +119,6 @@ func main() {
 	cfg := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
 		MaxVersion:               tls.VersionTLS12,
-		PreferServerCipherSuites: true,
 	}
 
 	srv := &http.Server{
