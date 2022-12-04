@@ -169,19 +169,24 @@ func main() {
 		quicServer := startServer(3, false, mux, cfg)
 		upgradeMux := http.NewServeMux()
 		upgradeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			//w.Write([]byte(`Attempting to redirect to H/3.`))
 			// https://github.com/lucas-clemente/quic-go/blob/8d496ebb5e3574a687d8a3b99988a5a51184884b/http3/server.go#L691
 			quicServer.SetQuicHeaders(w.Header())
 			mux.ServeHTTP(w, r)
 		})
-		go startServer(1, true, upgradeMux, cfg)
-		log.Fatal(http3.ListenAndServe(
+		go startServer(2, true, upgradeMux, cfg)
+		log.Fatal(quicServer.ListenAndServeTLS(
+				CERT,
+				KEY,
+			),
+		)
+		// This starts both servers but cannot be forced specific ciphers since higher-level
+		/*log.Fatal(http3.ListenAndServe(
 				PORT,
 				CERT,
 				KEY,
 				mux,
 			),
-		)
+		)*/
 	} else {
 		startServer(HTTP, false, mux, cfg)
 	}
