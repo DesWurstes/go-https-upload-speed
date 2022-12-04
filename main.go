@@ -45,10 +45,9 @@ const PORT = ":1441"
 const CERT = "./localhost+2.pem"
 const KEY = "./localhost+2-key.pem"
 const HTTP = 3
-const ENFORCE_CIPHERSUITES = true
 
 //https://stackoverflow.com/a/40699578
-func receiveFile(w http.ResponseWriter, r *http.Request) int {
+func ReceiveFile(w http.ResponseWriter, r *http.Request) int {
 	r.ParseMultipartForm(1 << 60)
 	file, _, err := r.FormFile("myFile")
 	if err != nil {
@@ -80,7 +79,7 @@ func main() {
       <body>`))
 		w.Write([]byte(req.Proto + "</br>"))
 		t1 := time.Now()
-		size := receiveFile(w, req)
+		size := ReceiveFile(w, req)
 		t2 := time.Since(t1)
 		x := fmt.Sprintf("%v", t2)
 		w.Write([]byte(fmt.Sprintf("cipher ") + fmt.Sprintf("0x%.4x</br>", req.TLS.CipherSuite)))
@@ -122,40 +121,25 @@ func main() {
 		MaxVersion:               tls.VersionTLS12,
 	}
 
-	if ENFORCE_CIPHERSUITES {
-		cfg.PreferServerCipherSuites = true
-		// https://github.com/golang/go/issues/11047
-		cfg.CipherSuites = []uint16{
-    	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-    	tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-    }
+	srv := &http.Server{
+		Addr:      PORT,
+		Handler:   mux,
+		TLSConfig: cfg,
+	}
+
+	if HTTP == 1 {
+		srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 	}
 
 	if HTTP == 3 {
-		srv := &http3.Server{
-			Addr:      PORT,
-			Handler:   mux,
-			// https://github.com/lucas-clemente/quic-go/blob/f2fa98c/interop/server/main.go
-			TLSConfig: cfg,
-		}
-
 		// https://stackoverflow.com/q/70961167
-		log.Fatal(srv.ListenAndServeTLS(
-			CERT,
-			KEY,
+		log.Fatal(http3.ListenAndServe(
+				PORT,
+				CERT,
+				KEY,
+				mux,
 		))
 	} else {
-		srv := &http.Server{
-			Addr:      PORT,
-			Handler:   mux,
-			TLSConfig: cfg,
-		}
-
-		if HTTP == 1 {
-			// Alternative ways: https://stackoverflow.com/a/67775105
-			srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
-		}
-
 		log.Fatal(srv.ListenAndServeTLS(
 			CERT,
 			KEY,
