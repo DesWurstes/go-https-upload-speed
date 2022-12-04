@@ -44,7 +44,11 @@ const PORT = ":1441"
 
 const CERT = "./localhost+2.pem"
 const KEY = "./localhost+2-key.pem"
-const HTTP = 3
+const HTTP = 2
+
+const ENFORCE_CIPHERSUITES = true
+// 12 is common between H/1.1 and H/2, 13 is common between H/2 and H/3
+const TLS_VERSION = 12
 
 //https://stackoverflow.com/a/40699578
 func ReceiveFile(w http.ResponseWriter, r *http.Request) int {
@@ -82,7 +86,9 @@ func main() {
 		size := ReceiveFile(w, req)
 		t2 := time.Since(t1)
 		x := fmt.Sprintf("%v", t2)
-		w.Write([]byte(fmt.Sprintf("cipher ") + fmt.Sprintf("0x%.4x</br>", req.TLS.CipherSuite)))
+		if req.TLS.CipherSuite != 0 {
+			w.Write([]byte(fmt.Sprintf("cipher ") + fmt.Sprintf("0x%.4x</br>", req.TLS.CipherSuite)))
+		}
 		w.Write([]byte(fmt.Sprintf("%v MB ", size/1000000) + fmt.Sprintf("%s</br>", x)))
 		w.Write([]byte(fmt.Sprintf("%.3f MB/s ", float64(size)/float64(t2.Nanoseconds())*1000)))
 		if size != 0 {
@@ -119,6 +125,27 @@ func main() {
 	cfg := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
 		MaxVersion:               tls.VersionTLS12,
+	}
+
+	if TLS_VERSION == 13 {
+		cfg.MinVersion = tls.VersionTLS13
+		cfg.MaxVersion = tls.VersionTLS13
+	}
+
+	if ENFORCE_CIPHERSUITES {
+		cfg.PreferServerCipherSuites = true
+		if TLS_VERSION == 12 {
+			// https://github.com/golang/go/issues/11047
+			cfg.CipherSuites = []uint16{
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_RSA_WITH_AES_128_CBC_SHA,				
+			}
+		} else {
+			cfg.CipherSuites = []uint16{
+				tls.TLS_CHACHA20_POLY1305_SHA256,
+			}
+		}
 	}
 
 	srv := &http.Server{
