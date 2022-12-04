@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strings"
 )
 /*
 Instructions for setting up this server:
@@ -96,14 +97,33 @@ func main() {
 		}
 		w.Write([]byte(fmt.Sprintf("%v MB ", size/1000000) + fmt.Sprintf("%s</br>", x)))
 		w.Write([]byte(fmt.Sprintf("%.3f MB/s ", float64(size)/float64(t2.Nanoseconds())*1000)))
-		if size != 0 {
+		// Prefer to print to console only when the client downloads
+		/*if size != 0 {
 			fmt.Printf("h/%v %.3f MB/s ", req.ProtoMajor, float64(size)/float64(t2.Nanoseconds())*1000)
-		}
+		}*/
 		w.Write([]byte(`</body></html>`))
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/" {
-			http.Redirect(w, req, "https://"+req.Host, http.StatusSeeOther)
+			i := 0
+			str := strings.ReplaceAll(strings.ReplaceAll(req.URL.Path[1:], "G", "M000"), "M", "000000")
+			_, err := fmt.Sscanf(str, "%d", &i)
+			if (err != nil) || (len(str) == 0)  {
+				http.Redirect(w, req, "https://"+req.Host, http.StatusSeeOther)
+				// fmt.Print(err)
+			}
+
+			// Send file
+
+			// https://golangbyexample.com/image-http-response-golang/
+			w.Header().Set("Content-Type", "application/octet-stream")
+			b := make([]byte, i)
+			t1 := time.Now()
+			w.Write(b)
+			t2 := time.Since(t1)
+			if i != 0 {
+				fmt.Printf("h/%v %.3f MB/s ", req.ProtoMajor, float64(i)/float64(t2.Nanoseconds())*1000)
+			}
 		}
 		w.Write([]byte(
 			`<!DOCTYPE html>
@@ -121,6 +141,11 @@ func main() {
           <input type="file" name="myFile" />
           <input type="submit" value="upload" />
         </form>
+				<br>
+				<a onclick="fetch('20M').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 20M file to browser memory</a><br>
+				<a onclick="fetch('1G').then((response) => document.body.innerHTML+='<br>started; check Go console soon')">Download 1G file to browser memory</a><br>
+				Manual: visit ./XM or ./XG to download files this big. Buttons above are preferred, to download to RAM rather than the disk.<br>
+				Speed will appear in the Golang console.
       </body>
       </html>
       `,
