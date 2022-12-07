@@ -140,6 +140,7 @@ func main() {
         </form>
 				<br>
 				<script>async function upload(length) {var blob = new Blob([new Uint8Array(length)], {type : "multipart/form-data"});var request = new XMLHttpRequest();request.open("POST", "upload.html");request.onreadystatechange = () => {if (request.readyState == 4) if (request.status == 200) document.body.innerHTML = request.response};request.send(blob);blob=null}</script>
+				Click one and wait patiently:<br>
 				<a onclick="upload(5000000)">Upload 5M</a><br>
 				<a onclick="upload(20000000)">Upload 20M</a><br>
 				<a onclick="upload(1000000000)">Upload 1G</a><br>
