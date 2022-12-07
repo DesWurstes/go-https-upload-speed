@@ -29,6 +29,7 @@ Instructions for setting up this server:
 -    typically ChaCha for H/3.
 -
 - copy this file into a new folder, name it "main.go".
+- $ go get github.com/lucas-clemente/quic-go/http3
 - $ mkcert localhost 127.0.0.1 ::1 <other domains/ips that can be used by the server>
 - (Note: I haven't tested this tool using IPv6)
 - Edit this "main.go" and set the constants below
